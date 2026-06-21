@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TML Order Hub</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0e2a43;--navy2:#143655;--ink:#1a2330;--muted:#6b7785;
+  --line:#e6e1d7;--bg:#f5f2ec;--card:#fff;--accent:#d97b3f;
+  --accent-soft:#fbe9da;--ok:#2f9e6f;--ok-bg:#e4f6ec;--ok-fg:#1c8a5a;
+  --plan-bg:#e8f0fb;--plan-fg:#2358a6;--danger:#d6543d;
+  --danger-bg:#fdeae5;--danger-fg:#b8462f;--purple-bg:#f3e8fb;--purple-fg:#6b2fa0;
+  --r:10px;--r2:14px;--sh:0 1px 3px rgba(14,42,67,.06),0 4px 12px rgba(14,42,67,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;padding-bottom:60px;}
+header{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;padding:16px;position:sticky;top:0;z-index:20;}
+.hdr{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.hdr h1{font-size:15px;font-weight:700;}
+.hdr p{font-size:11px;color:#a9bdd2;margin-top:2px;}
+.pill{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);border-radius:20px;padding:5px 11px;font-size:10px;font-weight:700;color:#cfe0ef;white-space:nowrap;flex-shrink:0;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);flex-shrink:0;transition:background .3s;}
+.dot.spin{background:var(--accent);animation:blink 1s infinite;}
+.dot.err{background:var(--danger);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
+.tabbar{display:flex;background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:62px;z-index:19;box-shadow:var(--sh);}
+.tab{flex:1;text-align:center;padding:12px 4px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2.5px solid transparent;transition:.15s;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.wrap{max-width:640px;margin:0 auto;padding:0 13px;}
+.panel{display:none;}
+.panel.active{display:block;animation:fi .18s ease;}
+@keyframes fi{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:15px;margin-top:13px;box-shadow:var(--sh);}
+.ct{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:13px;}
+.ct .sub{display:block;font-size:11px;font-weight:500;color:var(--muted);margin-top:2px;}
+label{display:block;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:11px 0 4px;}
+label:first-of-type{margin-top:0;}
+input,select{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:var(--r);font-size:14px;background:#fcfbf8;color:var(--ink);font-family:inherit;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+.r2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.r3{display:grid;grid-template-columns:.55fr 1.5fr .75fr;gap:9px;}
+.btn{width:100%;padding:12px;border:none;border-radius:var(--r);font-size:13.5px;font-weight:700;cursor:pointer;margin-top:13px;transition:.12s;font-family:inherit;}
+.btn:active{transform:scale(.98);}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.bp{background:var(--accent);color:#fff;}
+.bo{background:transparent;color:var(--navy);border:1.5px solid var(--navy);margin-top:8px;}
+.bg{background:transparent;color:var(--muted);border:1px solid var(--line);margin-top:8px;}
+.bd{background:transparent;color:var(--danger);border:1.5px solid var(--danger);margin-top:10px;}
+.note{font-size:11px;color:var(--muted);margin-top:7px;line-height:1.55;}
+.dg{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.6px;margin:16px 0 8px;padding-bottom:5px;border-bottom:1.5px dashed var(--line);}
+.dg:first-of-type{margin-top:0;}
+.oc{border:1.5px solid var(--line);border-radius:var(--r);padding:10px 11px;margin-bottom:7px;background:#fcfbf8;display:flex;justify-content:space-between;align-items:center;gap:9px;}
+.oc.ed{border-color:var(--accent);background:var(--accent-soft);}
+.om{flex:1;min-width:0;}
+.ot{font-size:13px;font-weight:600;line-height:1.4;}
+.oq{font-weight:800;color:var(--navy);}
+.meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px;}
+.badge{font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;}
+.bt{background:var(--navy);color:#fff;}
+.bv{background:#fbe9da;color:#9a5318;}
+.bpl{background:var(--plan-bg);color:var(--plan-fg);}
+.bco{background:var(--ok-bg);color:var(--ok-fg);}
+.bcc{background:var(--danger-bg);color:var(--danger-fg);}
+.bct{background:var(--purple-bg);color:var(--purple-fg);}
+.oa{display:flex;gap:5px;flex-shrink:0;}
+.ib{background:var(--card);border:1px solid var(--line);border-radius:7px;cursor:pointer;color:var(--muted);width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.ib.del{color:var(--danger);border-color:#f0c8c0;}
+.ib.edt{color:var(--navy);border-color:#c5d6e8;}
+.utags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:9px;}
+.utag{font-size:10.5px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.uf{background:var(--ok-bg);color:var(--ok-fg);}
+.um{background:var(--danger-bg);color:var(--danger-fg);}
+.empty{text-align:center;padding:36px 14px;color:var(--muted);font-size:13px;line-height:1.7;}
+.empty .ico{font-size:30px;display:block;margin-bottom:8px;}
+.wa-box{background:#0b141a;border-radius:var(--r2);padding:13px;margin-top:10px;}
+.wa-bub{background:#202c33;border-radius:var(--r);padding:13px;font-size:12.5px;line-height:1.65;white-space:pre-wrap;word-break:break-word;color:#e9edef;max-height:420px;overflow-y:auto;font-family:'Segoe UI',Helvetica,Arial,sans-serif;}
+.xlw{overflow-x:auto;margin-top:8px;}
+.xlt{width:100%;border-collapse:collapse;font-size:10.5px;}
+.xlt th{background:var(--navy);color:#fff;padding:6px 8px;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;white-space:nowrap;}
+.xlt td{padding:5px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+.xlt tr:nth-child(even) td{background:#f8f6f2;}
+.sr{display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;}
+.sn{background:var(--navy);color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.st{font-size:12px;color:var(--muted);line-height:1.6;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--navy);color:#fff;padding:10px 20px;border-radius:30px;font-size:12.5px;font-weight:700;opacity:0;pointer-events:none;transition:.22s;z-index:200;box-shadow:0 6px 20px rgba(0,0,0,.22);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.offline-banner{display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:var(--r);padding:10px 13px;margin-top:13px;font-size:12px;color:#856404;font-weight:600;}
+.offline-banner.show{display:block;}
+</style>
+</head>
+<body>
+<header>
+  <div class="hdr">
+    <div><h1>TML Order Hub</h1><p>PT Tri Mandiri Logistik &middot; Plan Booking & Confirm Order</p></div>
+    <div class="pill"><span class="dot" id="dot"></span><span id="lbl">Memuat...</span></div>
+  </div>
+</header>
+<div class="tabbar">
+  <div class="tab active" data-tab="input">&#9998; Isi & Simpan</div>
+  <div class="tab" data-tab="wa">&#128172; Teks WA</div>
+  <div class="tab" data-tab="excel">&#128202; Excel</div>
+</div>
+<div class="wrap">
+
+<!-- TAB INPUT -->
+<div class="panel active" id="panel-input">
+  <div class="offline-banner" id="offbanner">
+    &#9888; Mode Offline — Data tersimpan di HP ini sementara. Akan sync otomatis saat koneksi pulih.
+  </div>
+  <div class="card">
+    <div class="ct" id="ftitle">Tambah Order<span class="sub">Isi semua kolom lalu tap Simpan Order</span></div>
+    <label>Tanggal Order</label><input type="date" id="fd">
+    <label>Customer / Shipper</label>
+    <input type="text" id="fc" list="dlc" placeholder="Contoh: NX Lemo, Kaixing" autocomplete="off">
+    <datalist id="dlc"></datalist>
+    <div class="r3">
+      <div><label>Qty</label><input type="number" id="fq" min="1" value="1"></div>
+      <div><label>Tujuan / Rute</label><input type="text" id="fr" list="dlr" placeholder="Contoh: HLI Karawang" autocomplete="off"><datalist id="dlr"></datalist></div>
+      <div><label>Ukuran</label><select id="fsz"><option value="20">20'</option><option value="40">40'</option></select></div>
+    </div>
+    <div class="r2">
+      <div><label>Pelaksana Trucking</label>
+        <select id="ftk"><option value="TML">TML (Armada Sendiri)</option><option value="__v__">+ Vendor lain...</option></select>
+      </div>
+      <div><label>Status Order</label>
+        <select id="fst">
+          <option value="Plan">Plan</option>
+          <option value="Confirm">Confirm Order</option>
+          <option value="Cancel_Customer">Cancel by Customer</option>
+          <option value="Cancel_TML">Cancel by TML</option>
+        </select>
+      </div>
+    </div>
+    <div id="vw" style="display:none">
+      <label>Nama Vendor Trucking</label>
+      <input type="text" id="fv" list="dlv" placeholder="Contoh: Pelangi, Swadaya" autocomplete="off">
+      <datalist id="dlv"></datalist>
+    </div>
+    <div id="cw" style="display:none">
+      <label>Alasan Cancel (oleh Customer)</label>
+      <select id="fcr"><option value="Kapal Belum Sandar">Kapal Belum Sandar</option><option value="Dokumen Belum Ready">Dokumen Belum Ready</option></select>
+    </div>
+    <button class="btn bp" id="bsave">&#10003; Simpan Order</button>
+    <button class="btn bg" id="bcancel" style="display:none">&#10005; Batal Edit</button>
+  </div>
+
+  <div class="card">
+    <div class="ct">Status Unit per Tanggal<span class="sub">Catat Free Unit & Maintenance untuk tanggal tertentu</span></div>
+    <label>Tanggal</label><input type="date" id="fud">
+    <div class="r2">
+      <div><label>Free (unit)</label><input type="number" id="ffr" min="0" value="0"></div>
+      <div><label>Maintenance (unit)</label><input type="number" id="fma" min="0" value="0"></div>
+    </div>
+    <button class="btn bo" id="bunit">Simpan Status Unit</button>
+    <p class="note">Muncul sebagai keterangan di bawah judul tanggal di Daftar Order dan Teks WA.</p>
+  </div>
+
+  <div class="card">
+    <div class="ct">Daftar Order<span class="sub">Tap &#9998; untuk edit &nbsp;&bull;&nbsp; Tap &#10005; untuk hapus</span></div>
+    <div id="olist"><div class="empty"><span class="ico">&#128203;</span>Memuat data...</div></div>
+  </div>
+</div>
+
+<!-- TAB WA -->
+<div class="panel" id="panel-wa">
+  <div class="card">
+    <div class="ct">Preview Teks WhatsApp<span class="sub">Salin lalu paste ke grup WA tim</span></div>
+    <label>CC / Tag (opsional)</label>
+    <input type="text" id="fcc" value="@Kiki customs">
+    <div class="wa-box"><div class="wa-bub" id="waout">Belum ada data.</div></div>
+    <button class="btn bp" id="bcopy">&#128203; Salin Teks WA</button>
+    <p class="note">Hanya menampilkan order hari ini dan tanggal mendatang.</p>
+  </div>
+  <div class="card">
+    <div class="ct">Cara Pakai Bareng Tim<span class="sub">Data real-time tersimpan online untuk semua orang</span></div>
+    <div class="sr"><span class="sn">1</span><span class="st">Share link di bawah ini ke grup WhatsApp tim.</span></div>
+    <div class="sr"><span class="sn">2</span><span class="st">Semua orang buka link di Chrome — data sama dan real-time.</span></div>
+    <div class="sr"><span class="sn">3</span><span class="st">Siapa pun bisa input/edit order. Perubahan muncul otomatis di semua HP.</span></div>
+    <div class="sr"><span class="sn">&#128279;</span><span class="st" style="word-break:break-all;color:var(--navy);font-weight:700;">https://zulkiflisyahbana-art.github.io/TML-ORDER-HUB/</span></div>
+    <button class="btn bd" id="bclr">&#128465; Hapus Semua Data</button>
+  </div>
+</div>
+
+<!-- TAB EXCEL -->
+<div class="panel" id="panel-excel">
+  <div class="card">
+    <div class="ct">Download Laporan Excel<span class="sub">Export semua order ke file .xlsx siap pakai</span></div>
+    <label>Filter Periode (kosongkan untuk semua data)</label>
+    <div class="r2">
+      <div><label>Dari Tanggal</label><input type="date" id="xfrom"></div>
+      <div><label>Sampai Tanggal</label><input type="date" id="xto"></div>
+    </div>
+    <button class="btn bp" id="bxl">&#11015; Download Excel (.xlsx)</button>
+  </div>
+  <div class="card">
+    <div class="ct">Preview Data<span class="sub">Data yang akan masuk ke file Excel</span></div>
+    <div id="xprev"><div class="empty">Belum ada data.</div></div>
+  </div>
+</div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// CONFIG — Apps Script URL
+// ═══════════════════════════════════════════════════════
+const API = 'https://script.google.com/macros/s/AKfycbyAKUtYsvQEuiRk7j0BMrKlHOhUfoCOiEt5MyXDM10xc3V7yrajOa51Xpjrl9AgtUucLw/exec';
+const LS_ORDERS = 'tml_orders_v5';
+const LS_UNIT   = 'tml_unit_v5';
+const LS_QUEUE  = 'tml_queue_v5';
+
+let orders      = [];
+let unitByDate  = {};
+let queue       = []; // operasi offline yang belum sync
+let editingId   = null;
+let cbIdx       = 0;
+let lastHash    = '';
+let isOnline    = true;
+
+// ═══════════════════════════════════════════════════════
+// LOCAL STORAGE HELPERS
+// ═══════════════════════════════════════════════════════
+function lsGet(k, def){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):def; }catch(e){ return def; } }
+function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+function saveLocal(){ lsSet(LS_ORDERS, orders); }
+function loadLocal(){ return lsGet(LS_ORDERS, []); }
+function loadUnit(){ return lsGet(LS_UNIT, {}); }
+function saveUnit(d){ lsSet(LS_UNIT, d); }
+function loadQueue(){ return lsGet(LS_QUEUE, []); }
+function saveQueue(q){ lsSet(LS_QUEUE, q); }
+function getUnit(date){ return unitByDate[date]||null; }
+
+// ═══════════════════════════════════════════════════════
+// SYNC INDICATOR
+// ═══════════════════════════════════════════════════════
+function syncUI(state, txt){
+  const d=document.getElementById('dot'), l=document.getElementById('lbl');
+  d.className='dot'+(state==='loading'||state==='saving'?' spin':state==='err'?' err':'');
+  l.textContent=txt;
+}
+function setOnline(v){
+  isOnline=v;
+  document.getElementById('offbanner').className='offline-banner'+(v?'':' show');
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ═══════════════════════════════════════════════════════
+// JSONP — GET request, bypass CORS
+// ═══════════════════════════════════════════════════════
+function jsonpCall(params, timeout=15000){
+  return new Promise(resolve=>{
+    const cb='__cb'+(cbIdx++);
+    const qs=Object.entries(params).map(([k,v])=>
+      encodeURIComponent(k)+'='+encodeURIComponent(typeof v==='object'?JSON.stringify(v):String(v))
+    ).join('&');
+    const script=document.createElement('script');
+    const timer=setTimeout(()=>{ cleanup(); resolve(null); }, timeout);
+    function cleanup(){ clearTimeout(timer); delete window[cb]; if(script.parentNode) script.parentNode.removeChild(script); }
+    window[cb]=data=>{ cleanup(); resolve(data); };
+    script.onerror=()=>{ cleanup(); resolve(null); };
+    script.src=API+'?'+qs+'&callback='+cb+'&_='+Date.now();
+    document.head.appendChild(script);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// FETCH POST — fallback untuk write operations
+// ═══════════════════════════════════════════════════════
+async function fetchPost(payload){
+  try{
+    // Coba fetch biasa dulu
+    const r=await fetch(API,{
+      method:'POST',
+      redirect:'follow',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body:JSON.stringify(payload)
+    });
+    const txt=await r.text();
+    // Bersihkan response
+    const match=txt.match(/\{.*\}/s);
+    if(match){ const d=JSON.parse(match[0]); return d&&d.success===true; }
+    return false;
+  }catch(e){ return false; }
+}
+
+// ═══════════════════════════════════════════════════════
+// OPERASI UTAMA — coba JSONP dulu, fallback ke POST
+// ═══════════════════════════════════════════════════════
+async function apiCall(payload){
+  // Tambahkan request ID unik supaya server bisa dedup jika diperlukan, dan supaya
+  // kita tidak mengirim ulang operasi yang sama dua kali dalam waktu berdekatan
+  const reqKey = JSON.stringify(payload);
+  const now = Date.now();
+  if(_recentRequests[reqKey] && (now - _recentRequests[reqKey]) < 15000){
+    // Request identik baru saja dikirim — jangan kirim ulang, anggap masih diproses
+    return true;
+  }
+  _recentRequests[reqKey] = now;
+
+  // Coba JSONP via GET dengan timeout lebih panjang supaya tidak gampang retry palsu
+  const r=await jsonpCall(payload, 20000);
+  if(r&&r.success===true) return true;
+  // Fallback ke POST hanya jika JSONP benar-benar tidak merespons
+  const ok=await fetchPost(payload);
+  return ok;
+}
+const _recentRequests = {};
+
+// ═══════════════════════════════════════════════════════
+// QUEUE SYSTEM — simpan lokal dulu, sync saat online
+// ═══════════════════════════════════════════════════════
+async function execWithQueue(payload){
+  // Simpan ke orders lokal dulu (optimistic update)
+  const ok=await apiCall(payload);
+  if(ok){
+    setOnline(true);
+    return true;
+  }
+  // Offline — simpan ke queue
+  setOnline(false);
+  queue.push({...payload, _ts: Date.now()});
+  saveQueue(queue);
+  return 'queued'; // bukan gagal, tapi queued
+}
+
+async function flushQueue(){
+  if(!queue.length) return;
+  const pending=[...queue];
+  queue=[];
+  saveQueue([]);
+  for(const payload of pending){
+    delete payload._ts;
+    const ok=await apiCall(payload);
+    if(!ok){
+      // Masukkan balik ke queue kalau masih gagal
+      queue.push({...payload, _ts:Date.now()});
+    }
+  }
+  saveQueue(queue);
+  if(!queue.length){
+    setOnline(true);
+    syncUI('ok','Tersimpan online');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+const DAYS=['MINGGU','SENIN','SELASA','RABU','KAMIS','JUMAT','SABTU'];
+const DAYS_S=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+const MON=['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+const MON_S=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function sup(yr){ const m={'0':'\u2070','1':'\u00b9','2':'\u00b2','3':'\u00b3','4':'\u2074','5':'\u2075','6':'\u2076','7':'\u2077','8':'\u2078','9':'\u2079'}; return String(yr).slice(-2).split('').map(c=>m[c]||c).join(''); }
+function pd(s){
+  if(!s) return new Date();
+  // Kalau formatnya sudah YYYY-MM-DD murni
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return new Date(s+'T00:00:00');
+  // Kalau ada embel-embel waktu/timezone dari Google Sheets, ambil bagian tanggal saja
+  const match = String(s).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(match) return new Date(`${match[1]}-${match[2]}-${match[3]}T00:00:00`);
+  // Fallback: coba parse langsung
+  const d = new Date(s);
+  if(!isNaN(d.getTime())) return d;
+  return new Date();
+}
+function normDate(s){
+  if(!s) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const match = String(s).match(/(\d{4})-(\d{2})-(\d{2})/);
+  if(match) return `${match[1]}-${match[2]}-${match[3]}`;
+  const d = new Date(s);
+  if(!isNaN(d.getTime())){
+    const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), dd=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${dd}`;
+  }
+  return String(s);
+}
+function fwa(s){ const d=pd(s); return `${DAYS[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}'${sup(d.getFullYear())}`; }
+function fsh(s){ const d=pd(s); return `${DAYS_S[d.getDay()]}, ${String(d.getDate()).padStart(2,'0')} ${MON_S[d.getMonth()]} ${d.getFullYear()}`; }
+function today(){ const d=new Date(),off=d.getTimezoneOffset(),l=new Date(d-off*6e4); return l.toISOString().split('T')[0]; }
+function sz(s){ return String(s).trim()==='40'?"40'":"20'"; }
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function uid(){ return 'o'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+function grp(list){
+  const g={};
+  [...list].sort((a,b)=>a.date.localeCompare(b.date)||(a.createdAt||0)-(b.createdAt||0))
+    .forEach(o=>{ if(!g[o.date]) g[o.date]=[]; g[o.date].push(o); });
+  return g;
+}
+function stxt(st,cr){
+  if(st==='Confirm') return 'Confirm Order';
+  if(st==='Cancel_Customer') return 'Cancel Customer ('+(cr||'-')+')';
+  if(st==='Cancel_TML') return 'Cancel TML';
+  return 'Plan';
+}
+
+// ═══════════════════════════════════════════════════════
+// DATALISTS
+// ═══════════════════════════════════════════════════════
+function reDL(){
+  const fill=(id,arr)=>{ document.getElementById(id).innerHTML=arr.map(v=>`<option value="${esc(v)}">`).join(''); };
+  fill('dlc',[...new Set(orders.map(o=>o.customer).filter(Boolean))].sort());
+  fill('dlr',[...new Set(orders.map(o=>o.route).filter(Boolean))].sort());
+  fill('dlv',[...new Set(orders.map(o=>o.truckco).filter(t=>t&&t!=='TML'))].sort());
+}
+
+// ═══════════════════════════════════════════════════════
+// BADGES
+// ═══════════════════════════════════════════════════════
+function tbadge(t){ return t==='TML'?`<span class="badge bt">TML</span>`:`<span class="badge bv">${esc(t)}</span>`; }
+function sbadge(st,cr){
+  if(st==='Confirm') return `<span class="badge bco">Confirm</span>`;
+  if(st==='Cancel_Customer') return `<span class="badge bcc">&#10006; Cancel Cust &bull; ${esc(cr||'-')}</span>`;
+  if(st==='Cancel_TML') return `<span class="badge bct">&#10006; Cancel TML</span>`;
+  return `<span class="badge bpl">Plan</span>`;
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER ORDER LIST
+// ═══════════════════════════════════════════════════════
+function utHTML(date){
+  const u=getUnit(date); if(!u||(u.free===0&&u.maint===0)) return '';
+  let h='<div class="utags">';
+  if(u.free>0) h+=`<span class="utag uf">Free : ${u.free} unit</span>`;
+  if(u.maint>0) h+=`<span class="utag um">Maintenance : ${u.maint} unit</span>`;
+  return h+'</div>';
+}
+
+function renderList(){
+  const wrap=document.getElementById('olist');
+  if(!orders.length){ wrap.innerHTML='<div class="empty"><span class="ico">&#128203;</span>Belum ada order.<br>Isi form di atas untuk mulai.</div>'; return; }
+  const g=grp(orders); let h='';
+  Object.keys(g).sort().forEach(date=>{
+    h+=`<div class="dg">${fsh(date)}</div>${utHTML(date)}`;
+    g[date].forEach(o=>{
+      h+=`<div class="${o.id===editingId?'oc ed':'oc'}" data-id="${o.id}">
+        <div class="om">
+          <div class="ot"><span class="oq">${o.qty}x${sz(o.size)}</span> ${esc(o.customer)} &middot; ${esc(o.route)}</div>
+          <div class="meta">${tbadge(o.truckco)}${sbadge(o.status,o.cancelReason)}</div>
+        </div>
+        <div class="oa">
+          <button class="ib edt" data-a="edit">&#9998;</button>
+          <button class="ib del" data-a="del">&#10005;</button>
+        </div>
+      </div>`;
+    });
+  });
+  wrap.innerHTML=h;
+  wrap.querySelectorAll('[data-a="edit"]').forEach(b=>b.addEventListener('click',e=>startEdit(e.target.closest('.oc').dataset.id)));
+  wrap.querySelectorAll('[data-a="del"]').forEach(b=>b.addEventListener('click',async e=>{
+    const id=e.target.closest('.oc').dataset.id;
+    if(!confirm('Hapus order ini?')) return;
+    syncUI('saving','Menghapus...');
+    orders=orders.filter(o=>o.id!==id);
+    if(editingId===id) cancelEdit();
+    saveLocal(); renderAll();
+    const res=await execWithQueue({action:'delete',id});
+    if(res===true){ syncUI('ok','Tersimpan online'); toast('Order dihapus ✓'); }
+    else if(res==='queued'){ syncUI('err','Offline — tersimpan lokal'); toast('Tersimpan lokal, akan sync saat online'); }
+    else{ syncUI('err','Gagal'); toast('Gagal hapus'); }
+  }));
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER WA
+// ═══════════════════════════════════════════════════════
+function renderWA(){
+  const el=document.getElementById('waout'), td=today();
+  const src=orders.filter(o=>o.date>=td).length?orders.filter(o=>o.date>=td):orders;
+  if(!src.length){ el.textContent='Belum ada data order.'; return; }
+  const g=grp(src), D='\u2501'.repeat(13);
+  let L=['Update...','','\ud83d\udcca *PLAN BOOKING & CONFIRM ORDER*',D];
+  Object.keys(g).sort().forEach((date,i,arr)=>{
+    L.push(`\ud83d\udccc *${fwa(date)}*`);
+    const u=getUnit(date);
+    if(u&&(u.free>0||u.maint>0)){ const p=[]; if(u.free>0)p.push(`Free : ${u.free} unit`); if(u.maint>0)p.push(`Maintenance : ${u.maint} unit`); L.push(`_(${p.join(' | ')})_`); }
+    g[date].forEach(o=>{
+      const tr=o.truckco==='TML'?'TML':o.truckco;
+      let mk,sf;
+      if(o.status==='Confirm'){mk='\u2611';sf='';}
+      else if(o.status==='Cancel_Customer'){mk='\u274c';sf=` _(Cancel Cust - ${o.cancelReason||'-'})_`;}
+      else if(o.status==='Cancel_TML'){mk='\u274c';sf=' _(Cancel TML)_';}
+      else{mk='\u25a1';sf='';}
+      L.push(`${mk} *${o.qty}x${sz(o.size)}* ${o.customer}|${o.route}||${tr}${sf}`);
+    });
+    if(i<arr.length-1) L.push(D);
+  });
+  L.push(D,'');
+  const cc=document.getElementById('fcc').value.trim();
+  if(cc) L.push(`Cc: ${cc}`,'');
+  L.push('*Update akan dilakukan berkala sesuai perkembangan order*','','Thanks.');
+  el.textContent=L.join('\n');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER EXCEL
+// ═══════════════════════════════════════════════════════
+function xlList(){
+  const from=document.getElementById('xfrom').value, to=document.getElementById('xto').value;
+  let list=[...orders].sort((a,b)=>a.date.localeCompare(b.date));
+  if(from) list=list.filter(o=>o.date>=from);
+  if(to) list=list.filter(o=>o.date<=to);
+  return list;
+}
+function renderXL(){
+  const wrap=document.getElementById('xprev'), list=xlList();
+  if(!list.length){ wrap.innerHTML='<div class="empty">Tidak ada data untuk periode ini.</div>'; return; }
+  let h='<div class="xlw"><table class="xlt"><thead><tr><th>Tanggal</th><th>Customer</th><th>Tujuan/Rute</th><th>Qty</th><th>Ukuran</th><th>Trucking</th><th>Status</th></tr></thead><tbody>';
+  list.forEach(o=>{ h+=`<tr><td>${fsh(o.date)}</td><td>${esc(o.customer)}</td><td>${esc(o.route)}</td><td>${o.qty}</td><td>${sz(o.size)}</td><td>${esc(o.truckco)}</td><td>${stxt(o.status,o.cancelReason)}</td></tr>`; });
+  h+=`</tbody></table></div><p class="note" style="margin-top:8px">${list.length} order ditemukan.</p>`;
+  wrap.innerHTML=h;
+}
+function dlXL(){
+  const list=xlList();
+  if(!list.length){ toast('Tidak ada data untuk diexport'); return; }
+  const COLS=['Tanggal','Customer / Shipper','Tujuan / Rute','Qty','Ukuran','Pelaksana Trucking','Status','Alasan Cancel'];
+  const rows=list.map(o=>[o.date,o.customer,o.route,o.qty,sz(o.size),o.truckco,stxt(o.status,o.cancelReason),o.status==='Cancel_Customer'?(o.cancelReason||''):'']);
+  const wb=XLSX.utils.book_new(), ws=XLSX.utils.aoa_to_sheet([COLS,...rows]);
+  ws['!cols']=[{wch:14},{wch:22},{wch:22},{wch:6},{wch:8},{wch:18},{wch:30},{wch:22}];
+  XLSX.utils.book_append_sheet(wb,ws,'Laporan Order TML');
+  const from=document.getElementById('xfrom').value, to=document.getElementById('xto').value;
+  XLSX.writeFile(wb,`Laporan_TML${from&&to?'_'+from+'_'+to:''}.xlsx`);
+  toast('File Excel terdownload ✓');
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════
+function renderAll(){ reDL(); renderList(); renderWA(); renderXL(); }
+
+// ═══════════════════════════════════════════════════════
+// FORM
+// ═══════════════════════════════════════════════════════
+document.getElementById('ftk').addEventListener('change',e=>{ document.getElementById('vw').style.display=e.target.value==='__v__'?'block':'none'; });
+document.getElementById('fst').addEventListener('change',e=>{ document.getElementById('cw').style.display=e.target.value==='Cancel_Customer'?'block':'none'; });
+
+function getFD(){
+  const date=document.getElementById('fd').value, customer=document.getElementById('fc').value.trim();
+  const qty=Number(document.getElementById('fq').value), route=document.getElementById('fr').value.trim();
+  const size=document.getElementById('fsz').value, trk=document.getElementById('ftk').value, status=document.getElementById('fst').value;
+  if(!date||!customer||!route||qty<1) return null;
+  let truckco=trk;
+  if(trk==='__v__'){ const v=document.getElementById('fv').value.trim(); if(!v) return null; truckco=v; }
+  const cancelReason=status==='Cancel_Customer'?document.getElementById('fcr').value:'';
+  return{date,customer,qty,route,size,truckco,status,cancelReason};
+}
+
+function resetF(){
+  const d=document.getElementById('fd').value;
+  ['fc','fr','fv'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fq').value=1; document.getElementById('fsz').value='20';
+  document.getElementById('ftk').value='TML'; document.getElementById('fst').value='Plan';
+  document.getElementById('vw').style.display='none'; document.getElementById('cw').style.display='none';
+  document.getElementById('fd').value=d;
+}
+
+function fillF(o){
+  document.getElementById('fd').value=o.date; document.getElementById('fc').value=o.customer;
+  document.getElementById('fq').value=o.qty; document.getElementById('fr').value=o.route;
+  document.getElementById('fsz').value=(String(o.size).trim()==='40')?'40':'20';
+  document.getElementById('fst').value=o.status||'Plan';
+  document.getElementById('cw').style.display=o.status==='Cancel_Customer'?'block':'none';
+  if(o.status==='Cancel_Customer'&&o.cancelReason) document.getElementById('fcr').value=o.cancelReason;
+  if(o.truckco==='TML'){ document.getElementById('ftk').value='TML'; document.getElementById('vw').style.display='none'; }
+  else{ document.getElementById('ftk').value='__v__'; document.getElementById('vw').style.display='block'; document.getElementById('fv').value=o.truckco; }
+}
+
+function startEdit(id){
+  const o=orders.find(x=>x.id===id); if(!o) return;
+  editingId=id; fillF(o);
+  document.getElementById('ftitle').innerHTML='Edit Order<span class="sub">Ubah data lalu tap Simpan Perubahan</span>';
+  document.getElementById('bsave').textContent='✓ Simpan Perubahan';
+  document.getElementById('bcancel').style.display='block';
+  renderList(); window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function cancelEdit(){
+  editingId=null; resetF();
+  document.getElementById('ftitle').innerHTML='Tambah Order<span class="sub">Isi semua kolom lalu tap Simpan Order</span>';
+  document.getElementById('bsave').textContent='✓ Simpan Order';
+  document.getElementById('bcancel').style.display='none';
+  // Terapkan data terbaru dari server yang sempat tertunda selama proses edit
+  if(_pendingFresh){
+    orders=_pendingFresh; _pendingFresh=null; saveLocal(); renderAll();
+  }else{
+    renderList();
+  }
+}
+
+document.getElementById('bcancel').addEventListener('click',cancelEdit);
+
+document.getElementById('bsave').addEventListener('click',async()=>{
+  const data=getFD();
+  if(!data){ toast('Lengkapi semua data yang diperlukan'); return; }
+  const btn=document.getElementById('bsave');
+  btn.disabled=true; syncUI('saving','Menyimpan...');
+
+  if(editingId){
+    const idx=orders.findIndex(o=>o.id===editingId);
+    const upd={...orders[idx],...data};
+    orders[idx]=upd; saveLocal(); renderAll();
+    const res=await execWithQueue({action:'update',order:upd});
+    if(res===true){ syncUI('ok','Tersimpan online'); toast('Perubahan disimpan ✓'); }
+    else if(res==='queued'){ syncUI('err','Offline — tersimpan lokal'); toast('Tersimpan lokal, akan sync saat online'); }
+    else{ syncUI('err','Gagal'); toast('Gagal — coba lagi'); }
+    cancelEdit();
+  }else{
+    const no={id:uid(),...data,createdAt:Date.now()};
+    orders.push(no); saveLocal(); resetF(); renderAll();
+    const res=await execWithQueue({action:'add',order:no});
+    if(res===true){ syncUI('ok','Tersimpan online'); toast('Order tersimpan ✓'); }
+    else if(res==='queued'){ syncUI('err','Offline — tersimpan lokal'); toast('Tersimpan lokal, akan sync saat online'); }
+    else{ syncUI('err','Gagal'); toast('Gagal — coba lagi'); }
+  }
+  btn.disabled=false;
+});
+
+// ═══════════════════════════════════════════════════════
+// UNIT STATUS
+// ═══════════════════════════════════════════════════════
+document.getElementById('bunit').addEventListener('click',()=>{
+  const date=document.getElementById('fud').value;
+  if(!date){ toast('Pilih tanggal terlebih dahulu'); return; }
+  const free=Number(document.getElementById('ffr').value)||0, maint=Number(document.getElementById('fma').value)||0;
+  unitByDate[date]={free,maint}; saveUnit(unitByDate);
+  renderList(); renderWA(); toast(`Status unit ${fsh(date)} disimpan ✓`);
+});
+document.getElementById('fud').addEventListener('change',e=>{ const u=getUnit(e.target.value); document.getElementById('ffr').value=u?u.free:0; document.getElementById('fma').value=u?u.maint:0; });
+
+// ═══════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-'+t.dataset.tab).classList.add('active');
+}));
+
+// ═══════════════════════════════════════════════════════
+// COPY WA
+// ═══════════════════════════════════════════════════════
+document.getElementById('bcopy').addEventListener('click',async()=>{
+  const txt=document.getElementById('waout').textContent;
+  try{ await navigator.clipboard.writeText(txt); toast('Teks WA disalin ✓'); }
+  catch{ const ta=document.createElement('textarea'); ta.value=txt; ta.style.cssText='position:fixed;opacity:0;'; document.body.appendChild(ta); ta.select(); try{ document.execCommand('copy'); toast('Teks WA disalin ✓'); }catch(e){ toast('Salin manual dari teks di atas'); } document.body.removeChild(ta); }
+});
+document.getElementById('fcc').addEventListener('input',renderWA);
+
+// ═══════════════════════════════════════════════════════
+// CLEAR ALL
+// ═══════════════════════════════════════════════════════
+document.getElementById('bclr').addEventListener('click',async()=>{
+  if(!confirm('Hapus SEMUA data order untuk seluruh tim? Tidak bisa dibatalkan.')) return;
+  syncUI('saving','Menghapus...');
+  orders=[]; saveLocal(); cancelEdit(); renderAll();
+  const res=await execWithQueue({action:'clearAll'});
+  if(res===true){ syncUI('ok','Tersimpan online'); toast('Semua data dihapus'); }
+  else{ syncUI('err','Offline — dihapus lokal'); toast('Dihapus lokal'); }
+});
+
+// ═══════════════════════════════════════════════════════
+// EXCEL
+// ═══════════════════════════════════════════════════════
+document.getElementById('bxl').addEventListener('click',dlXL);
+document.getElementById('xfrom').addEventListener('change',renderXL);
+document.getElementById('xto').addEventListener('change',renderXL);
+
+// ═══════════════════════════════════════════════════════
+// POLLING & SYNC — ambil data dari server tiap 10 detik
+// ═══════════════════════════════════════════════════════
+async function fetchOrders(){
+  try{
+    const r=await jsonpCall({action:'getAll'}, 12000);
+    if(r&&r.success&&Array.isArray(r.orders)){
+      return r.orders.map(o=>({...o, date: normDate(o.date)}));
+    }
+    return null;
+  }catch(e){ return null; }
+}
+
+async function poll(){
+  // Flush queue dulu kalau ada operasi pending
+  if(queue.length) await flushQueue();
+  // Ambil data terbaru dari server
+  const fresh=await fetchOrders();
+  if(!fresh){ setOnline(false); return; }
+  setOnline(true);
+  const h=JSON.stringify(fresh);
+  if(h!==lastHash){
+    lastHash=h;
+    if(editingId){
+      // Sedang ada yang diedit di device ini — tunda update tampilan
+      // supaya tidak menimpa perubahan yang belum disimpan, tapi tetap simpan data terbaru
+      _pendingFresh = fresh;
+    }else{
+      orders=fresh; saveLocal(); renderAll();
+    }
+  }
+  if(queue.length===0) syncUI('ok','Tersimpan online');
+}
+let _pendingFresh = null;
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+async function init(){
+  document.getElementById('fd').value=today();
+  document.getElementById('fud').value=today();
+  unitByDate=loadUnit();
+  queue=loadQueue();
+  const u=getUnit(today());
+  document.getElementById('ffr').value=u?u.free:0;
+  document.getElementById('fma').value=u?u.maint:0;
+
+  // Load dari lokal dulu supaya langsung tampil
+  const local=loadLocal();
+  if(local.length){ orders=local; renderAll(); }
+
+  syncUI('loading','Memuat dari server...');
+  const fresh=await fetchOrders();
+  if(fresh){
+    setOnline(true);
+    orders=fresh; lastHash=JSON.stringify(fresh);
+    saveLocal(); renderAll();
+    syncUI('ok','Tersimpan online');
+    if(queue.length) await flushQueue();
+  }else{
+    setOnline(false);
+    syncUI('err','Offline — pakai data lokal');
+    if(!local.length){
+      document.getElementById('olist').innerHTML='<div class="empty"><span class="ico">&#128203;</span>Belum ada data.<br>Isi form di atas untuk mulai.</div>';
+    }
+  }
+
+  // Poll tiap 10 detik
+  setInterval(poll, 10000);
+}
+
+init();
+</script>
+</body>
+</html>
